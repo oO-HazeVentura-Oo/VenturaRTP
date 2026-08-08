@@ -32,5 +32,3 @@ tasks {
         archiveVersion.set(project.version.toString())
     }
 }
-    }
-}
