@@ -29,6 +29,6 @@ tasks {
 
     jar {
         archiveBaseName.set("VenturaRTP")
-        archiveVersion.set(version)
+        archiveVersion.set(project.version.toString())
     }
 }
