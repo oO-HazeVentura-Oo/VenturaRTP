@@ -19,82 +19,81 @@ import org.bukkit.inventory.meta.components.CustomModelDataComponent;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.util.ArrayList;
 import java.util.List;
 
 public final class VenturaRTP extends JavaPlugin implements Listener {
 
     private final MiniMessage mm = MiniMessage.miniMessage();
     private NamespacedKey destinationKey;
+    private NamespacedKey menuKey;
 
     @Override
     public void onEnable() {
         saveDefaultConfig();
         destinationKey = new NamespacedKey(this, "destination");
+        menuKey = new NamespacedKey(this, "rtp_menu");
         Bukkit.getPluginManager().registerEvents(this, this);
-        getLogger().info("VenturaRTP enabled.");
-    }
-
-    @Override
-    public void onDisable() {
-        getLogger().info("VenturaRTP disabled.");
+        getLogger().info("VenturaRTP v1.2.0 enabled - 3x3 tile GUI.");
     }
 
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
-        if (!command.getName().equalsIgnoreCase("rtp")) {
-            return false;
-        }
-
+        if (!command.getName().equalsIgnoreCase("rtp")) return false;
         if (!(sender instanceof Player player)) {
             sender.sendMessage("This command can only be used by players.");
             return true;
         }
-
         openMenu(player);
         return true;
     }
 
     private void openMenu(Player player) {
-        int rows = Math.max(1, Math.min(6, getConfig().getInt("menu.rows", 3)));
-        Component title = mm.deserialize(getConfig().getString("menu.title", "<dark_gray>ʀᴀɴᴅᴏᴍ ᴛᴇʟᴇᴘᴏʀᴛ"));
-        Inventory inventory = Bukkit.createInventory(null, rows * 9, title);
+        Component title = mm.deserialize(getConfig().getString(
+                "menu.title", "<dark_gray>ʀᴀɴᴅᴏᴍ ᴛᴇʟᴇᴘᴏʀᴛ"));
 
-        ConfigurationSection buttons = getConfig().getConfigurationSection("buttons");
-        if (buttons != null) {
-            for (String key : buttons.getKeys(false)) {
-                ConfigurationSection section = buttons.getConfigurationSection(key);
-                if (section == null) continue;
+        Inventory inv = Bukkit.createInventory(null, 27, title);
 
-                int slot = section.getInt("slot", -1);
-                if (slot < 0 || slot >= inventory.getSize()) continue;
+        placeDestination(inv, "overworld", 0);
+        placeDestination(inv, "nether", 3);
+        placeDestination(inv, "end", 6);
 
-                inventory.setItem(slot, createButton(key, section));
-            }
-        }
-
-        player.openInventory(inventory);
+        player.openInventory(inv);
     }
 
-    private ItemStack createButton(String destination, ConfigurationSection section) {
+    private void placeDestination(Inventory inv, String destination, int startColumn) {
+        ConfigurationSection section =
+                getConfig().getConfigurationSection("destinations." + destination);
+        if (section == null) return;
+
+        int modelStart = section.getInt("custom-model-data-start");
+        String displayName = section.getString("name", "<white>" + destination);
+
+        int tile = 0;
+        for (int row = 0; row < 3; row++) {
+            for (int col = 0; col < 3; col++) {
+                int slot = row * 9 + startColumn + col;
+                int modelData = modelStart + tile;
+                inv.setItem(slot, createTile(destination, displayName, modelData));
+                tile++;
+            }
+        }
+    }
+
+    private ItemStack createTile(String destination, String displayName, int modelDataValue) {
         ItemStack item = new ItemStack(Material.PAPER);
         ItemMeta meta = item.getItemMeta();
 
-        float customModelData = (float) section.getDouble("custom-model-data", 0.0D);
-        CustomModelDataComponent modelData = meta.getCustomModelDataComponent();
-        modelData.setFloats(List.of(customModelData));
-        meta.setCustomModelDataComponent(modelData);
+        CustomModelDataComponent cmd = meta.getCustomModelDataComponent();
+        cmd.setFloats(List.of((float) modelDataValue));
+        meta.setCustomModelDataComponent(cmd);
 
-        String name = section.getString("name", "<white>" + destination);
-        meta.displayName(mm.deserialize(name));
+        meta.displayName(mm.deserialize(displayName));
 
-        List<Component> lore = new ArrayList<>();
-        for (String line : section.getStringList("lore")) {
-            lore.add(mm.deserialize(line));
-        }
-        meta.lore(lore);
+        meta.getPersistentDataContainer()
+                .set(destinationKey, PersistentDataType.STRING, destination);
+        meta.getPersistentDataContainer()
+                .set(menuKey, PersistentDataType.BYTE, (byte) 1);
 
-        meta.getPersistentDataContainer().set(destinationKey, PersistentDataType.STRING, destination);
         item.setItemMeta(meta);
         return item;
     }
@@ -104,23 +103,28 @@ public final class VenturaRTP extends JavaPlugin implements Listener {
         if (!(event.getWhoClicked() instanceof Player player)) return;
 
         ItemStack item = event.getCurrentItem();
-        if (item == null || item.getType().isAir()) return;
-        if (!item.hasItemMeta()) return;
+        if (item == null || item.getType().isAir() || !item.hasItemMeta()) return;
 
         ItemMeta meta = item.getItemMeta();
-        String destination = meta.getPersistentDataContainer().get(destinationKey, PersistentDataType.STRING);
-        if (destination == null) return;
+        Byte isMenuTile = meta.getPersistentDataContainer()
+                .get(menuKey, PersistentDataType.BYTE);
+        if (isMenuTile == null || isMenuTile != (byte) 1) return;
 
         event.setCancelled(true);
+
+        String destination = meta.getPersistentDataContainer()
+                .get(destinationKey, PersistentDataType.STRING);
+        if (destination == null) return;
+
         player.closeInventory();
 
-        String command = getConfig().getString("buttons." + destination + ".command", "");
-        if (command.isBlank()) {
-            player.sendMessage(mm.deserialize("<red>Für dieses Ziel ist kein RTP-Befehl konfiguriert.</red>"));
-            return;
-        }
+        String cmd = getConfig().getString(
+                "destinations." + destination + ".command", "");
+        if (cmd.isBlank()) return;
 
-        String resolved = command.replace("%player%", player.getName());
-        Bukkit.dispatchCommand(Bukkit.getConsoleSender(), resolved);
+        Bukkit.dispatchCommand(
+                Bukkit.getConsoleSender(),
+                cmd.replace("%player%", player.getName())
+        );
     }
 }

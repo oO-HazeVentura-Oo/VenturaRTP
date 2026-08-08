@@ -1,9 +1,9 @@
 name: VenturaRTP
-version: 1.0.0
+version: 1.2.0
 main: de.ventura.rtp.VenturaRTP
 api-version: '26.2'
 author: HazeVentura
-description: Custom RTP GUI for Ventura Kingdom using Paper 26.2 CustomModelData components.
+description: Ventura Kingdom 3x3 RTP GUI for Paper 26.2.
 commands:
   rtp:
     description: Opens the Ventura Kingdom RTP menu.
