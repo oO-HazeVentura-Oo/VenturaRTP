@@ -1,4 +1,4 @@
-name: Build VenturaRTP
+name: Build VenturaRTP v1.2
 
 on:
   workflow_dispatch:
@@ -31,5 +31,5 @@ jobs:
       - name: Upload VenturaRTP JAR
         uses: actions/upload-artifact@v4
         with:
-          name: VenturaRTP
-          path: build/libs/VenturaRTP-1.0.0.jar
+          name: VenturaRTP-v1.2
+          path: build/libs/VenturaRTP-1.2.0.jar
