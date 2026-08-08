@@ -1,0 +1,37 @@
+menu:
+  title: "<dark_gray>ʀᴀɴᴅᴏᴍ ᴛᴇʟᴇᴘᴏʀᴛ"
+  rows: 3
+
+buttons:
+  overworld:
+    slot: 11
+    custom-model-data: 10001
+    name: "<bold><green>OVERWORLD</green></bold>"
+    lore:
+      - "<gray>Teleportiere dich an einen"
+      - "<gray>zufälligen Ort in der <green>Overworld</green><gray>."
+      - ""
+      - "<green>➜ Klicken zum Teleportieren</green>"
+    command: "betterrtp player %player% world"
+
+  nether:
+    slot: 13
+    custom-model-data: 10002
+    name: "<bold><red>NETHER</red></bold>"
+    lore:
+      - "<gray>Teleportiere dich an einen"
+      - "<gray>zufälligen Ort im <red>Nether</red><gray>."
+      - ""
+      - "<red>➜ Klicken zum Teleportieren</red>"
+    command: "betterrtp player %player% world_nether"
+
+  end:
+    slot: 15
+    custom-model-data: 10003
+    name: "<bold><light_purple>THE END</light_purple></bold>"
+    lore:
+      - "<gray>Teleportiere dich an einen"
+      - "<gray>zufälligen Ort im <light_purple>End</light_purple><gray>."
+      - ""
+      - "<light_purple>➜ Klicken zum Teleportieren</light_purple>"
+    command: "betterrtp player %player% world_the_end"
